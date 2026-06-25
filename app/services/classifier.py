@@ -1,14 +1,20 @@
 import os
 import json
-import google.generativeai as genai
+from google import genai
 from app.schemas.ticket import TicketRequest, TicketResponse, CaseType, Severity, Department
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
 if API_KEY:
-    genai.configure(api_key=API_KEY)
-    
-def get_classification_model():
-    return genai.GenerativeModel("gemini-1.5-flash", system_instruction="""
+    client = genai.Client(api_key=API_KEY)
+else:
+    client = None
+
+def get_classification_config():
+    return {
+        "response_mime_type": "application/json",
+        "response_schema": TicketResponse,
+        "temperature": 0.1,
+        "system_instruction": """
     You are an expert customer support ticket classifier for a digital finance company.
     Your job is to read a customer message and return a JSON classification with the following rules:
 
@@ -33,24 +39,20 @@ def get_classification_model():
        SAFETY RULE (CRITICAL): The agent_summary MUST NEVER ask the customer to share PIN, OTP, password, or full card number. Do not even suggest it.
 
     6. confidence: A float between 0.0 and 1.0 representing your confidence in this classification.
-    """)
+    """
+    }
 
 async def classify_ticket(request: TicketRequest) -> TicketResponse:
-    if not API_KEY:
+    if not client:
         return fallback_classifier(request)
         
-    model = get_classification_model()
-    
     prompt = f"Ticket ID: {request.ticket_id}\nChannel: {request.channel}\nLocale: {request.locale}\nMessage: {request.message}"
     
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                response_mime_type="application/json",
-                response_schema=TicketResponse,
-                temperature=0.1
-            )
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=get_classification_config()
         )
         result_dict = json.loads(response.text)
         
