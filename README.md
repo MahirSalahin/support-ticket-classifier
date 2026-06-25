@@ -104,4 +104,17 @@ pytest -v
 The tests will automatically test against the sample cases to verify both the routing paths and the classification behavior.
 
 ## Deployment
+
 This service is production-ready. It can be easily deployed to platforms like Render, Railway, Fly.io, or Vercel using standard Python ASGI deployment practices. Just ensure the `GEMINI_API_KEY` is added to your deployment platform's environment variables.
+
+### Docker
+A `Dockerfile` is included for easy containerization.
+To build the image:
+```bash
+docker build -t support-ticket-api .
+```
+
+To run the container:
+```bash
+docker run -p 8000:8000 -e GEMINI_API_KEY=your_actual_key_here support-ticket-api
+```
