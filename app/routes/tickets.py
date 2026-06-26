@@ -6,6 +6,6 @@ from app.core.limiter import limiter
 router = APIRouter()
 
 @router.post("/sort-ticket", response_model=TicketResponse, tags=["Tickets"])
-@limiter.limit("5/minute")
+@limiter.limit("10/minute")
 async def sort_ticket(request: Request, payload: TicketRequest):
     return await classify_ticket(payload)
