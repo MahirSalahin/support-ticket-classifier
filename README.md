@@ -9,13 +9,16 @@ A FastAPI-based web service that automatically categorizes incoming customer sup
 - **Safety First**: Implements strict safety guardrails to ensure customer summaries never ask for sensitive info like PINs, OTPs, or passwords.
 - **Robust Fallback Engine**: Includes a heuristic, rule-based fallback system that takes over seamlessly if the LLM API is unavailable, unconfigured, or rate-limited.
 - **Type-Safe Validation**: Built with Pydantic and Enums to guarantee that API responses precisely match the required JSON schema.
+- **Rate Limiting**: Protects endpoints against abuse using `slowapi`, returning a `429 Too Many Requests` status when thresholds are exceeded.
 
 ## Project Structure
 
 ```text
-support-ticket/
+support-ticket-classifier/
 ├── app/
 │   ├── main.py                # FastAPI app entry point
+│   ├── core/                  # Core configurations
+│   │   └── limiter.py         # SlowAPI rate limiter setup
 │   ├── routes/                # API Endpoints
 │   │   ├── health.py          # GET /health
 │   │   └── tickets.py         # POST /sort-ticket
@@ -31,9 +34,10 @@ support-ticket/
 ## Setup & Installation
 
 1. **Clone the repository:**
-   Ensure you are in the project root folder (`support-ticket`).
+   Ensure you are in the project root folder (`support-ticket-classifier`).
 
 2. **Create and activate a virtual environment:**
+
    ```bash
    # Windows
    python -m venv venv
@@ -45,6 +49,7 @@ support-ticket/
    ```
 
 3. **Install Dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -54,7 +59,7 @@ support-ticket/
    ```bash
    cp .env.example .env
    ```
-   *Edit `.env` and replace `your_gemini_api_key_here` with your actual Google Gemini API key.*
+   _Edit `.env` and replace `your_gemini_api_key_here` with your actual Google Gemini API key._
 
 ## Running the API
 
@@ -63,24 +68,32 @@ Start the FastAPI development server using `uvicorn`:
 ```bash
 uvicorn app.main:app --reload
 ```
-*Note: The API will run on `http://127.0.0.1:8000` by default.*
+
+_Note: The API will run on `http://127.0.0.1:8000` by default._
 
 ## Endpoints
 
 ### 1. `GET /health`
+
 Returns a simple JSON payload confirming the service is online.
+**Rate Limit:** 20 requests per minute
 **Response:** `{"status": "ok"}`
 
 ### 2. `POST /sort-ticket`
+
 Analyzes a support ticket and returns its classification.
+**Rate Limit:** 5 requests per minute
 **Request Body:**
+
 ```json
 {
   "ticket_id": "T-001",
   "message": "Someone called asking my OTP, is that bKash?"
 }
 ```
+
 **Response:**
+
 ```json
 {
   "ticket_id": "T-001",
@@ -108,13 +121,16 @@ The tests will automatically test against the sample cases to verify both the ro
 This service is production-ready. It can be easily deployed to platforms like Render, Railway, Fly.io, or Vercel using standard Python ASGI deployment practices. Just ensure the `GEMINI_API_KEY` is added to your deployment platform's environment variables.
 
 ### Docker
+
 A `Dockerfile` is included for easy containerization.
 To build the image:
+
 ```bash
-docker build -t support-ticket-api .
+docker build -t support-ticket-classifier .
 ```
 
 To run the container:
+
 ```bash
-docker run -p 8000:8000 -e GEMINI_API_KEY=your_actual_key_here support-ticket-api
+docker run -p 8000:8000 -e GEMINI_API_KEY=your_actual_key_here support-ticket-classifier
 ```
