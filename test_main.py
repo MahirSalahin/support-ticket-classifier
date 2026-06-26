@@ -63,3 +63,13 @@ def test_sort_ticket(ticket_id, message, expected_case, expected_severity):
         
     if data["severity"] == "critical":
         assert data["human_review_required"] is True
+
+def test_rate_limit_health():
+    # Health limit is 20/min. We called it once before, so we call it 19 times to reach 20.
+    for _ in range(19):
+        response = client.get("/health")
+        assert response.status_code == 200
+        
+    # 21st call should trigger 429 Too Many Requests
+    response = client.get("/health")
+    assert response.status_code == 429
